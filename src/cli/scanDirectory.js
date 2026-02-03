@@ -24,29 +24,41 @@ function shouldIgnore(entryName, ignorePatterns) {
   return ignorePatterns.some((pattern) => minimatch(entryName, pattern));
 }
 
+/**
+ * Scans a directory recursively and tracks skipped/inaccessible counts.
+ * @param {string} dirPath
+ * @param {Array} files
+ * @param {Array} ignorePatterns
+ * @param {Object} counters - { skipped: 0, inaccessible: 0, directoriesSkipped: 0 }
+ */
 export default async function scanDirectory(
   dirPath,
   files = [],
   ignorePatterns = null,
+  counters = { skipped: 0, inaccessible: 0, directoriesSkipped: 0 },
 ) {
-  // load ignore patterns at root if not provided
   if (!ignorePatterns) ignorePatterns = loadIgnorePatterns(dirPath);
 
   let entries;
   try {
     entries = await fs.readdir(dirPath, { withFileTypes: true });
   } catch (err) {
-    console.warn(`Skipping ${dirPath}: ${err.message}`);
-    return files;
+    console.warn(`Skipping directory ${dirPath}: ${err.message}`);
+    counters.directoriesSkipped++;
+    return { files, counters };
   }
 
   for (const entry of entries) {
-    if (shouldIgnore(entry.name, ignorePatterns)) continue;
+    if (shouldIgnore(entry.name, ignorePatterns)) {
+      if (entry.isDirectory()) counters.directoriesSkipped++;
+      else counters.skipped++;
+      continue;
+    }
 
     const fullPath = path.join(dirPath, entry.name);
 
     if (entry.isDirectory()) {
-      await scanDirectory(fullPath, files, ignorePatterns);
+      await scanDirectory(fullPath, files, ignorePatterns, counters);
     } else if (entry.isFile()) {
       try {
         const stats = await fs.stat(fullPath);
@@ -61,9 +73,10 @@ export default async function scanDirectory(
         });
       } catch (err) {
         console.warn(`Skipping file ${fullPath}: ${err.message}`);
+        counters.inaccessible++;
       }
     }
   }
 
-  return files;
+  return { files, counters };
 }
