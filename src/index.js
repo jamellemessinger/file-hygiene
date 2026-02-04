@@ -1,10 +1,18 @@
 import getDirectory from './cli/getDirectory.js';
 import scanDirectory from './cli/scanDirectory.js';
+import {
+  findLargeFiles,
+  findOldFiles,
+  findDuplicates,
+} from './analysis/index.js';
 
 async function main() {
   try {
     const directory = await getDirectory();
     const { files, counters } = await scanDirectory(directory);
+    const largeFiles = findLargeFiles(files);
+    const oldFiles = findOldFiles(files);
+    const duplicates = await findDuplicates(files);
 
     // console.log(`Found ${files.length} files`);
     // console.log('\nPreview:\n\n', files.slice(0, 3));
@@ -17,6 +25,10 @@ async function main() {
     console.log(
       `Files inaccessible (permission errors): ${counters.inaccessible}`,
     );
+
+    console.log(`\nLarge files: ${largeFiles.length}`);
+    console.log(`Old files: ${oldFiles.length}`);
+    console.log(`Duplicate groups: ${duplicates.length}`);
   } catch (err) {
     console.error('Error:', err.message);
   }
