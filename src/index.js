@@ -1,5 +1,5 @@
 import getDirectory from './cli/getDirectory.js';
-import scanDirectory from './cli/scanDirectory.js';
+import scanDirectory from './scanner/scanDirectory.js';
 import {
   findLargeFiles,
   findOldFiles,

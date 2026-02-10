@@ -1,4 +1,4 @@
-import formatBytes from '../utils/formatBytes';
+import formatBytes from '../utils/formatBytes.js';
 export function displayScanSummary({ counters, analysis }) {
   console.log('\n================ Scan Summary ================\n');
 
